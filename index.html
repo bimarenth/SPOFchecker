@@ -28,10 +28,10 @@
                     }
                 }
             }
-        }
+        };
     </script>
     <style>
-        /* Smooth transitions and custom scrollbar */
+        /* Smooth transitions and base typography */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
@@ -43,8 +43,14 @@
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .animate-fade-in {
             animation: fadeIn 0.25s ease-out forwards;
@@ -58,18 +64,16 @@
         <!-- Section Title & Subtitle -->
         <div class="mb-6">
             <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Search Datek</h2>
-            <p class="text-sm text-slate-500 mt-1">Cari data teknis berdasarkan CID, nama customer, atau alamat site</p>
+            <p class="text-sm text-slate-500 mt-1">Cari data teknis berdasarkan CID</p>
         </div>
 
         <!-- Unified Search Card -->
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6">
             
-            <!-- Filter Mode Selector Bar -->
+            <!-- Top Utility Bar (Header Token Config Only) -->
             <div class="flex flex-wrap items-center justify-between gap-3 pb-5 mb-5 border-b border-slate-100">
                 <div class="flex items-center gap-3">
-                    <span class="text-sm font-medium text-slate-600">Cari berdasarkan CID</span>
-                    <div class="inline-flex rounded-lg p-0.5 bg-slate-100 border border-slate-200/80">
-                    </div>
+                    <span class="text-sm font-medium text-slate-600">Input CID di sini</span>
                 </div>
 
                 <!-- Collapsible Auth Token Config -->
@@ -93,7 +97,7 @@
                         type="text" 
                         id="api-token" 
                         value="xxxxxxx" 
-                        placeholder="Masukkan token otorisasi..."
+                        placeholder="Masukkan token otorisasi"
                         class="flex-1 text-xs font-mono bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 input-focus-ring"
                     >
                     <span class="text-[11px] text-slate-500">Dikirim pada header HTTP request</span>
@@ -107,7 +111,7 @@
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label for="cid-input-1" class="block text-sm font-semibold text-slate-800">
-                            CID / CID 1 <span class="text-rose-500">*</span>
+                            CID 1 <span class="text-rose-500">*</span>
                         </label>
                         <span id="counter-1" class="text-xs font-medium text-slate-400">0 / 10 digit</span>
                     </div>
@@ -119,7 +123,7 @@
                             inputmode="numeric"
                             maxlength="10"
                             autocomplete="off"
-                            placeholder="Masukkan CID (10 digit), contoh: 2025496539"
+                            placeholder="Masukkan CID 1 (10 digit), contoh: 2025496539"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all input-focus-ring"
                         >
                         <button type="button" data-clear="cid-input-1" class="clear-btn hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Hapus input">
@@ -134,7 +138,7 @@
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label for="cid-input-2" class="block text-sm font-semibold text-slate-800">
-                            CID / CID 2 <span class="text-rose-500">*</span>
+                            CID 2 <span class="text-rose-500">*</span>
                         </label>
                         <span id="counter-2" class="text-xs font-medium text-slate-400">0 / 10 digit</span>
                     </div>
@@ -146,7 +150,7 @@
                             inputmode="numeric"
                             maxlength="10"
                             autocomplete="off"
-                            placeholder="Masukkan CID (10 digit), contoh: 2024430333"
+                            placeholder="Masukkan CID 2 (10 digit), contoh: 2024430333"
                             class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all input-focus-ring"
                         >
                         <button type="button" data-clear="cid-input-2" class="clear-btn hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Hapus input">
@@ -285,9 +289,9 @@
 
     <script>
         /**
-         * Aplikasi Search Datek - CID / CID SPOF Checker
-         * Mengirimkan request GET ke endpoint datek_checker dengan 2 CID (10 digit)
-         * dan header Authorization: Token xxxxxxx
+         * Aplikasi Search Datek - CID SPOF Checker
+         * Default pencarian hanya menggunakan CID (2 input 10 digit)
+         * dengan header Authorization: Token xxxxxxx
          */
         document.addEventListener('DOMContentLoaded', () => {
             // Referensi Elemen DOM
@@ -314,34 +318,23 @@
             const resSpofDescription = document.getElementById('res-spof-description');
             const spofCountBadge = document.getElementById('spof-count-badge');
             const sourceBadge = document.getElementById('source-badge');
-            const requestUrlPreview = document.getElementById('request-url-preview');
 
             // Contoh Payload Resmi sesuai spesifikasi
             const SAMPLE_PAYLOAD = {
-                "success": true,
-                "CID": "2025496539,2024430333,2026506695",
-                "message": "Data found",
-                "total_results": 17,
-                "spof_status": "yes",
-                "spof_description": [
-                    "SPOF di Node Service MPLS Node untuk SRMPLS di node TGRSTSIP01 (CID: 2024430333, 2026506695)",
-                    "SPOF di Node Switching untuk SWRAISECOM di node TGRSMTSR01 (CID: 2024430333, 2025496539, 2026506695)"
+                success: true,
+                sid: '2025496539,2024430333,2026506695',
+                message: 'Data found',
+                total_results: 17,
+                spof_status: 'yes',
+                spof_description: [
+                    'SPOF di Node Service MPLS Node untuk SRMPLS di node TGRSTSIP01 (SID: 2024430333, 2026506695)',
+                    'SPOF di Node Switching untuk SWRAISECOM di node TGRSMTSR01 (SID: 2024430333, 2025496539, 2026506695)'
                 ]
             };
 
             // Toggle Panel Konfigurasi Token
             toggleTokenBtn.addEventListener('click', () => {
                 tokenPanel.classList.toggle('hidden');
-            });
-
-            // Tab Toggle UI ("# CID" vs "Customer")
-            const tabCID = document.getElementById('tab-CID');
-            const tabCustomer = document.getElementById('tab-customer');
-            tabCustomer.addEventListener('click', () => {
-                showBanner('info', 'Mode pencarian saat ini dikunci pada <strong># CID</strong> (2 input 10 digit angka) sesuai parameter API datek_checker.');
-            });
-            tabCID.addEventListener('click', () => {
-                hideBanner();
             });
 
             /**
@@ -360,7 +353,7 @@
                     inputEl.classList.remove('border-rose-400');
                     inputEl.classList.add('border-emerald-400');
                 } else if (len > 0) {
-                    counterEl.classList.remove('text-slate-400', 'text-emerald-600');
+                    counterEl.classList.remove('text-slate-400', 'text-emerald-600', 'font-semibold');
                     counterEl.classList.add('text-amber-600');
                     inputEl.classList.remove('border-emerald-400', 'border-rose-400');
                 } else {
@@ -369,38 +362,33 @@
                     inputEl.classList.remove('border-emerald-400', 'border-rose-400');
                 }
 
-                // Tampilkan/sembunyikan tombol clear (X)
+                // Tampilkan atau sembunyikan tombol clear (X)
                 const clearBtn = document.querySelector(`[data-clear="${inputEl.id}"]`);
                 if (clearBtn) {
                     clearBtn.classList.toggle('hidden', len === 0);
                 }
-
-                updateUrlPreview();
-            }
-
-            // Perbarui preview URL secara real-time saat mengetik
-            function updateUrlPreview() {
-                const val1 = input1.value.trim() || '{input1}';
-                const val2 = input2.value.trim() || '{input2}';
-                requestUrlPreview.textContent = `http://10.24.129.14/verapi/api/v1/datek/datek_checker/?CID=${val1}%2C${val2}`;
             }
 
             input1.addEventListener('input', () => handleNumericInput(input1, counter1));
             input2.addEventListener('input', () => handleNumericInput(input2, counter2));
 
             // Tombol Hapus (X) di masing-masing input
-            document.querySelectorAll('.clear-btn').forEach(btn => {
+            document.querySelectorAll('.clear-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const targetId = btn.getAttribute('data-clear');
                     const targetInput = document.getElementById(targetId);
                     const targetCounter = targetId === 'cid-input-1' ? counter1 : counter2;
-                    targetInput.value = '';
-                    handleNumericInput(targetInput, targetCounter);
-                    targetInput.focus();
+                    if (targetInput && targetCounter) {
+                        targetInput.value = '';
+                        handleNumericInput(targetInput, targetCounter);
+                        targetInput.focus();
+                    }
                 });
             });
 
-            // Helper Banner Pesan Status
+            /**
+             * Menampilkan banner pesan status / validasi
+             */
             function showBanner(type, htmlMessage) {
                 feedbackBanner.classList.remove(
                     'hidden',
@@ -428,19 +416,38 @@
                 feedbackBanner.classList.add('hidden');
             }
 
-            // Mengatur State Loading pada Tombol Cari Datek
+            /**
+             * Mengatur state loading pada tombol Cari Datek
+             */
             function setLoading(isLoading) {
                 btnSearch.disabled = isLoading;
                 searchIcon.classList.toggle('hidden', isLoading);
                 loadingSpinner.classList.toggle('hidden', !isLoading);
-                btnSearchLabel.textContent = isLoading ? 'Mencari Datek...' : 'Cari Datek';
+                btnSearchLabel.textContent = isLoading ? 'Mencari Datek' : 'Cari Datek';
+            }
+
+            /**
+             * Sanitasi string HTML untuk mencegah XSS
+             */
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = String(str);
+                return div.innerHTML;
+            }
+
+            /**
+             * Menyoroti kode node dan nomor CID 10 digit agar mudah dibaca
+             */
+            function highlightTechnicalTokens(escapedText) {
+                return escapedText
+                    .replace(/\b([A-Z]{6,}[0-9]{2,})\b/g, '<span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-900 font-mono text-xs font-semibold">$1</span>')
+                    .replace(/\b(\d{10})\b/g, '<span class="text-blue-700 font-mono font-semibold">$1</span>');
             }
 
             /**
              * Menampilkan hasil JSON ke Kotak Dialog Bawah Kiri & Bawah Kanan
              */
             function renderResults(data, sourceLabel = 'Live API Response') {
-                // Tampilkan badge sumber data
                 sourceBadge.textContent = sourceLabel;
                 sourceBadge.classList.remove('hidden');
 
@@ -475,9 +482,9 @@
                 }
 
                 // 2. Kotak Dialog Bawah Kanan: "spof_description"
-                const descriptions = Array.isArray(data?.spof_description)
+                const descriptions = Array.isArray(data && data.spof_description)
                     ? data.spof_description
-                    : (data?.spof_description ? [String(data.spof_description)] : []);
+                    : (data && data.spof_description ? [String(data.spof_description)] : []);
 
                 spofCountBadge.textContent = `${descriptions.length} item`;
 
@@ -501,22 +508,8 @@
                 }
             }
 
-            // Highlight kode node dan nomor CID 10 digit agar mudah dibaca teknisi
-            function highlightTechnicalTokens(escapedText) {
-                return escapedText
-                    .replace(/\b([A-Z]{6,}[0-9]{2,})\b/g, '<span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-900 font-mono text-xs font-semibold">$1</span>')
-                    .replace(/\b(\d{10})\b/g, '<span class="text-blue-700 font-mono font-semibold">$1</span>');
-            }
-
-            // Sanitasi HTML untuk mencegah XSS
-            function escapeHtml(str) {
-                const div = document.createElement('div');
-                div.textContent = str;
-                return div.innerHTML;
-            }
-
             /**
-             * Eksekusi Pencarian ke API Endpoint
+             * Eksekusi Pencarian ke API Endpoint saat tombol Cari Datek diklik
              */
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -530,20 +523,19 @@
                 if (!/^\d{10}$/.test(cid1)) {
                     input1.classList.add('border-rose-400');
                     input1.focus();
-                    showBanner('error', '<strong>Validasi Gagal:</strong> Input <strong>CID / CID 1</strong> harus berupa <strong>10 digit angka</strong>.');
+                    showBanner('error', '<strong>Validasi Gagal:</strong> Input <strong>CID 1</strong> harus berupa <strong>10 digit angka</strong>.');
                     return;
                 }
 
                 if (!/^\d{10}$/.test(cid2)) {
                     input2.classList.add('border-rose-400');
                     input2.focus();
-                    showBanner('error', '<strong>Validasi Gagal:</strong> Input <strong>CID / CID 2</strong> harus berupa <strong>10 digit angka</strong>.');
+                    showBanner('error', '<strong>Validasi Gagal:</strong> Input <strong>CID 2</strong> harus berupa <strong>10 digit angka</strong>.');
                     return;
                 }
 
-                // URL sesuai spesifikasi: http://10.24.129.14/verapi/api/v1/datek/datek_checker/?CID={input1}%2C{input2}
-                const targetUrl = `http://10.24.129.14/verapi/api/v1/datek/datek_checker/?CID=${encodeURIComponent(cid1)}%2C${encodeURIComponent(cid2)}`;
-                requestUrlPreview.textContent = targetUrl;
+                // URL sesuai spesifikasi endpoint datek_checker
+                const targetUrl = `http://10.24.129.14/verapi/api/v1/datek/datek_checker/?sid=${encodeURIComponent(cid1)}%2C${encodeURIComponent(cid2)}`;
 
                 setLoading(true);
 
@@ -564,13 +556,12 @@
                     renderResults(jsonData, 'Live API Response');
                     showBanner('success', `Berhasil mengambil data untuk CID <strong>${cid1}</strong> dan <strong>${cid2}</strong>.`);
                 } catch (err) {
-                    // Penanganan error jaringan intranet / CORS / Mixed Content
                     console.error('Fetch Error:', err);
                     showBanner(
                         'warning',
                         `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                                <strong>Tidak dapat terhubung ke server intranet (10.24.129.14):</strong> 
+                                <strong>Tidak dapat terhubung ke server API</strong> 
                                 <span class="block text-xs mt-0.5 opacity-90">${escapeHtml(err.message)}. Pastikan perangkat terhubung ke jaringan intranet / VPN, atau uji tampilan menggunakan data contoh.</span>
                             </div>
                             <button type="button" id="btn-fallback-sample" class="shrink-0 px-3 py-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors">
@@ -582,8 +573,8 @@
                     const fallbackBtn = document.getElementById('btn-fallback-sample');
                     if (fallbackBtn) {
                         fallbackBtn.addEventListener('click', () => {
-                            renderResults(SAMPLE_PAYLOAD, 'Simulasi Payload Contoh');
-                            showBanner('info', 'Menampilkan hasil menggunakan <strong>Simulasi Payload Contoh</strong>.');
+                            renderResults(SAMPLE_PAYLOAD, 'Simulasi');
+                            showBanner('info', 'Menampilkan hasil menggunakan <strong>Simulasi</strong>.');
                         });
                     }
                 } finally {
@@ -591,7 +582,7 @@
                 }
             });
 
-            // Tombol Simulasi Data Contoh (mengisi 10 digit contoh jika kosong & menampilkan hasil)
+            // Tombol Simulasi Data Contoh
             btnSimulate.addEventListener('click', () => {
                 if (!input1.value) {
                     input1.value = '2025496539';
@@ -601,8 +592,9 @@
                     input2.value = '2024430333';
                     handleNumericInput(input2, counter2);
                 }
-                renderResults(SAMPLE_PAYLOAD, 'Simulasi Payload Contoh');
-                showBanner('info', 'Menampilkan hasil simulasi berdasarkan payload contoh dengan header <code class="font-mono text-xs">Authorization: Token ${escapeHtml(tokenInput.value || "xxxxxxx")}</code>.');
+                const currentToken = escapeHtml(tokenInput.value.trim() || 'xxxxxxx');
+                renderResults(SAMPLE_PAYLOAD, 'Simulasi');
+                showBanner('info', `Menampilkan hasil Simulasi.`);
             });
 
             // Tombol Reset Form
@@ -616,7 +608,7 @@
                 sourceBadge.classList.add('hidden');
                 resMessage.textContent = 'Belum ada data';
                 resMessage.className = 'text-base font-semibold text-slate-700 break-words';
-                resSpofStatus.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-200/70 text-slate-600">-</span>`;
+                resSpofStatus.innerHTML = '<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-200/70 text-slate-600">-</span>';
                 spofCountBadge.textContent = '0 item';
                 resSpofDescription.innerHTML = `
                     <div class="h-full min-h-[120px] flex flex-col items-center justify-center text-center p-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/40">
