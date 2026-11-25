@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPOF Check</title>
+    <!-- Load Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth transitions and custom scrollbar */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .input-focus-ring:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+    <!-- Main Workspace Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        
+        <!-- Section Title & Subtitle -->
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Search Datek</h2>
+            <p class="text-sm text-slate-500 mt-1">Cari data teknis berdasarkan CID, nama customer, atau alamat site</p>
+        </div>
+
+        <!-- Unified Search Card -->
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6">
+            
+            <!-- Filter Mode Selector Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-5 mb-5 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-medium text-slate-600">Cari berdasarkan:</span>
+                    <div class="inline-flex rounded-lg p-0.5 bg-slate-100 border border-slate-200/80">
+                        <button type="button" id="tab-CID" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold bg-blue-600 text-white shadow-sm transition-all">
+                            <span>#</span>
+                            <span>CID</span>
+                        </button>
+                        <button type="button" id="tab-customer" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 transition-all">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                            <span>Customer</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Collapsible Auth Token Config -->
+                <div class="flex items-center gap-2">
+                    <button type="button" id="toggle-token-btn" class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-blue-200 bg-slate-50/70 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                        </svg>
+                        <span>Header Token</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Collapsible Authorization Token Input -->
+            <div id="token-panel" class="hidden mb-5 p-3.5 rounded-lg bg-slate-50 border border-slate-200 animate-fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <label for="api-token" class="text-xs font-semibold text-slate-700 whitespace-nowrap">
+                        Authorization: Token
+                    </label>
+                    <input 
+                        type="text" 
+                        id="api-token" 
+                        value="xxxxxxx" 
+                        placeholder="Masukkan token otorisasi..."
+                        class="flex-1 text-xs font-mono bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 input-focus-ring"
+                    >
+                    <span class="text-[11px] text-slate-500">Dikirim pada header HTTP request</span>
+                </div>
+            </div>
+
+            <!-- Form for 2 CID Inputs + Single Merged Search Button -->
+            <form id="datek-search-form" novalidate class="space-y-4">
+                
+                <!-- Input Bar 1: CID 1 (10 Digit Number) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="cid-input-1" class="block text-sm font-semibold text-slate-800">
+                            CID / CID 1 <span class="text-rose-500">*</span>
+                        </label>
+                        <span id="counter-1" class="text-xs font-medium text-slate-400">0 / 10 digit</span>
+                    </div>
+                    <div class="relative">
+                        <input
+                            type="text"
+                            id="cid-input-1"
+                            name="cid1"
+                            inputmode="numeric"
+                            maxlength="10"
+                            autocomplete="off"
+                            placeholder="Masukkan CID (10 digit), contoh: 2025496539"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all input-focus-ring"
+                        >
+                        <button type="button" data-clear="cid-input-1" class="clear-btn hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Hapus input">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Bar 2: CID 2 (10 Digit Number) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="cid-input-2" class="block text-sm font-semibold text-slate-800">
+                            CID / CID 2 <span class="text-rose-500">*</span>
+                        </label>
+                        <span id="counter-2" class="text-xs font-medium text-slate-400">0 / 10 digit</span>
+                    </div>
+                    <div class="relative">
+                        <input
+                            type="text"
+                            id="cid-input-2"
+                            name="cid2"
+                            inputmode="numeric"
+                            maxlength="10"
+                            autocomplete="off"
+                            placeholder="Masukkan CID (10 digit), contoh: 2024430333"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 transition-all input-focus-ring"
+                        >
+                        <button type="button" data-clear="cid-input-2" class="clear-btn hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1" title="Hapus input">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inline Validation / Status Message Banner -->
+                <div id="feedback-banner" class="hidden rounded-lg p-3.5 text-sm animate-fade-in" role="alert"></div>
+
+                <!-- Single Merged Search Button & Helper Actions -->
+                <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Single Merged Search Button -->
+                        <button
+                            type="submit"
+                            id="btn-search-datek"
+                            class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <svg id="search-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
+                            <svg id="loading-spinner" class="hidden animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="btn-search-label">Cari Datek</span>
+                        </button>
+
+                        <!-- Secondary Button for Testing Sample Data Offline -->
+                        <button
+                            type="button"
+                            id="btn-simulate"
+                            class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors"
+                        >
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                            </svg>
+                            <span>Simulasi Data Contoh</span>
+                        </button>
+                    </div>
+
+                    <button type="button" id="btn-reset" class="text-xs font-medium text-slate-500 hover:text-slate-800 self-start sm:self-center px-2 py-1">
+                        Reset Form
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Bottom Result Dialog Boxes (Left: message & spof_status | Right: spof_description) -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            
+            <!-- Bottom-Left Dialog Box: "message" and "spof_status" -->
+            <div id="dialog-left" class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                <!-- Dialog Header -->
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Hasil Status &amp; Message</h3>
+                        </div>
+                    </div>
+                    <span id="source-badge" class="hidden text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                        Menunggu pencarian
+                    </span>
+                </div>
+
+                <!-- Dialog Content -->
+                <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Field: message -->
+                        <div class="rounded-lg border border-slate-200/90 bg-slate-50/50 p-4">
+                            <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                Message
+                            </span>
+                            <div id="res-message" class="text-base font-semibold text-slate-700 break-words">
+                                Belum ada data
+                            </div>
+                        </div>
+
+                        <!-- Field: spof_status -->
+                        <div class="rounded-lg border border-slate-200/90 bg-slate-50/50 p-4">
+                            <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                                SPOF Status
+                            </span>
+                            <div id="res-spof-status" class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-200/70 text-slate-600">
+                                    -
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom-Right Dialog Box: "spof_description" -->
+            <div id="dialog-right" class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                <!-- Dialog Header -->
+                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">SPOF Description</h3>
+                        </div>
+                    </div>
+                    <span id="spof-count-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        0 item
+                    </span>
+                </div>
+
+                <!-- Dialog Content -->
+                <div class="p-5 flex-1">
+                    <div id="res-spof-description" class="space-y-3">
+                        <!-- Empty State Placeholder -->
+                        <div class="h-full min-h-[120px] flex flex-col items-center justify-center text-center p-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/40">
+                            <p class="text-sm font-medium text-slate-500">Belum ada deskripsi SPOF</p>
+                            <p class="text-xs text-slate-400 mt-1">Masukkan 2 CID lalu klik tombol <strong>Cari Datek</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        /**
+         * Aplikasi Search Datek - CID / CID SPOF Checker
+         * Mengirimkan request GET ke endpoint datek_checker dengan 2 CID (10 digit)
+         * dan header Authorization: Token xxxxxxx
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Referensi Elemen DOM
+            const form = document.getElementById('datek-search-form');
+            const input1 = document.getElementById('cid-input-1');
+            const input2 = document.getElementById('cid-input-2');
+            const counter1 = document.getElementById('counter-1');
+            const counter2 = document.getElementById('counter-2');
+            const tokenInput = document.getElementById('api-token');
+            const tokenPanel = document.getElementById('token-panel');
+            const toggleTokenBtn = document.getElementById('toggle-token-btn');
+            const feedbackBanner = document.getElementById('feedback-banner');
+
+            const btnSearch = document.getElementById('btn-search-datek');
+            const btnSearchLabel = document.getElementById('btn-search-label');
+            const searchIcon = document.getElementById('search-icon');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const btnSimulate = document.getElementById('btn-simulate');
+            const btnReset = document.getElementById('btn-reset');
+
+            // Elemen Output Dialog Kiri & Kanan
+            const resMessage = document.getElementById('res-message');
+            const resSpofStatus = document.getElementById('res-spof-status');
+            const resSpofDescription = document.getElementById('res-spof-description');
+            const spofCountBadge = document.getElementById('spof-count-badge');
+            const sourceBadge = document.getElementById('source-badge');
+            const requestUrlPreview = document.getElementById('request-url-preview');
+
+            // Contoh Payload Resmi sesuai spesifikasi
+            const SAMPLE_PAYLOAD = {
+                "success": true,
+                "CID": "2025496539,2024430333,2026506695",
+                "message": "Data found",
+                "total_results": 17,
+                "spof_status": "yes",
+                "spof_description": [
+                    "SPOF di Node Service MPLS Node untuk SRMPLS di node TGRSTSIP01 (CID: 2024430333, 2026506695)",
+                    "SPOF di Node Switching untuk SWRAISECOM di node TGRSMTSR01 (CID: 2024430333, 2025496539, 2026506695)"
+                ]
+            };
+
+            // Toggle Panel Konfigurasi Token
+            toggleTokenBtn.addEventListener('click', () => {
+                tokenPanel.classList.toggle('hidden');
+            });
+
+            // Tab Toggle UI ("# CID" vs "Customer")
+            const tabCID = document.getElementById('tab-CID');
+            const tabCustomer = document.getElementById('tab-customer');
+            tabCustomer.addEventListener('click', () => {
+                showBanner('info', 'Mode pencarian saat ini dikunci pada <strong># CID</strong> (2 input 10 digit angka) sesuai parameter API datek_checker.');
+            });
+            tabCID.addEventListener('click', () => {
+                hideBanner();
+            });
+
+            /**
+             * Memvalidasi & memformat input agar hanya menerima angka maksimal 10 digit
+             */
+            function handleNumericInput(inputEl, counterEl) {
+                const digitsOnly = inputEl.value.replace(/\D/g, '').slice(0, 10);
+                inputEl.value = digitsOnly;
+
+                const len = digitsOnly.length;
+                counterEl.textContent = `${len} / 10 digit`;
+
+                if (len === 10) {
+                    counterEl.classList.remove('text-slate-400', 'text-amber-600');
+                    counterEl.classList.add('text-emerald-600', 'font-semibold');
+                    inputEl.classList.remove('border-rose-400');
+                    inputEl.classList.add('border-emerald-400');
+                } else if (len > 0) {
+                    counterEl.classList.remove('text-slate-400', 'text-emerald-600');
+                    counterEl.classList.add('text-amber-600');
+                    inputEl.classList.remove('border-emerald-400', 'border-rose-400');
+                } else {
+                    counterEl.classList.remove('text-emerald-600', 'text-amber-600', 'font-semibold');
+                    counterEl.classList.add('text-slate-400');
+                    inputEl.classList.remove('border-emerald-400', 'border-rose-400');
+                }
+
+                // Tampilkan/sembunyikan tombol clear (X)
+                const clearBtn = document.querySelector(`[data-clear="${inputEl.id}"]`);
+                if (clearBtn) {
+                    clearBtn.classList.toggle('hidden', len === 0);
+                }
+
+                updateUrlPreview();
+            }
+
+            // Perbarui preview URL secara real-time saat mengetik
+            function updateUrlPreview() {
+                const val1 = input1.value.trim() || '{input1}';
+                const val2 = input2.value.trim() || '{input2}';
+                requestUrlPreview.textContent = `http://10.24.129.14/verapi/api/v1/datek/datek_checker/?CID=${val1}%2C${val2}`;
+            }
+
+            input1.addEventListener('input', () => handleNumericInput(input1, counter1));
+            input2.addEventListener('input', () => handleNumericInput(input2, counter2));
+
+            // Tombol Hapus (X) di masing-masing input
+            document.querySelectorAll('.clear-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-clear');
+                    const targetInput = document.getElementById(targetId);
+                    const targetCounter = targetId === 'cid-input-1' ? counter1 : counter2;
+                    targetInput.value = '';
+                    handleNumericInput(targetInput, targetCounter);
+                    targetInput.focus();
+                });
+            });
+
+            // Helper Banner Pesan Status
+            function showBanner(type, htmlMessage) {
+                feedbackBanner.classList.remove(
+                    'hidden',
+                    'bg-rose-50', 'text-rose-800', 'border-rose-200',
+                    'bg-amber-50', 'text-amber-800', 'border-amber-200',
+                    'bg-blue-50', 'text-blue-800', 'border-blue-200',
+                    'bg-emerald-50', 'text-emerald-800', 'border-emerald-200'
+                );
+                feedbackBanner.classList.add('border');
+
+                if (type === 'error') {
+                    feedbackBanner.classList.add('bg-rose-50', 'text-rose-800', 'border-rose-200');
+                } else if (type === 'warning') {
+                    feedbackBanner.classList.add('bg-amber-50', 'text-amber-800', 'border-amber-200');
+                } else if (type === 'success') {
+                    feedbackBanner.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
+                } else {
+                    feedbackBanner.classList.add('bg-blue-50', 'text-blue-800', 'border-blue-200');
+                }
+
+                feedbackBanner.innerHTML = htmlMessage;
+            }
+
+            function hideBanner() {
+                feedbackBanner.classList.add('hidden');
+            }
+
+            // Mengatur State Loading pada Tombol Cari Datek
+            function setLoading(isLoading) {
+                btnSearch.disabled = isLoading;
+                searchIcon.classList.toggle('hidden', isLoading);
+                loadingSpinner.classList.toggle('hidden', !isLoading);
+                btnSearchLabel.textContent = isLoading ? 'Mencari Datek...' : 'Cari Datek';
+            }
+
+            /**
+             * Menampilkan hasil JSON ke Kotak Dialog Bawah Kiri & Bawah Kanan
+             */
+            function renderResults(data, sourceLabel = 'Live API Response') {
+                // Tampilkan badge sumber data
+                sourceBadge.textContent = sourceLabel;
+                sourceBadge.classList.remove('hidden');
+
+                // 1. Kotak Dialog Bawah Kiri: "message" & "spof_status"
+                const messageText = data && data.message ? String(data.message) : 'Tidak ada pesan';
+                resMessage.textContent = messageText;
+                resMessage.className = 'text-base font-bold text-slate-900 break-words animate-fade-in';
+
+                const rawStatus = data && data.spof_status !== undefined ? String(data.spof_status).trim() : '-';
+                const lowerStatus = rawStatus.toLowerCase();
+
+                if (lowerStatus === 'yes') {
+                    resSpofStatus.innerHTML = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 uppercase animate-fade-in">
+                            <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                            ${escapeHtml(rawStatus)} (SPOF Terdeteksi)
+                        </span>
+                    `;
+                } else if (lowerStatus === 'no') {
+                    resSpofStatus.innerHTML = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 uppercase animate-fade-in">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                            ${escapeHtml(rawStatus)} (Aman / Non-SPOF)
+                        </span>
+                    `;
+                } else {
+                    resSpofStatus.innerHTML = `
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 animate-fade-in">
+                            ${escapeHtml(rawStatus)}
+                        </span>
+                    `;
+                }
+
+                // 2. Kotak Dialog Bawah Kanan: "spof_description"
+                const descriptions = Array.isArray(data?.spof_description)
+                    ? data.spof_description
+                    : (data?.spof_description ? [String(data.spof_description)] : []);
+
+                spofCountBadge.textContent = `${descriptions.length} item`;
+
+                if (descriptions.length === 0) {
+                    resSpofDescription.innerHTML = `
+                        <div class="p-4 rounded-lg border border-slate-200 bg-slate-50 text-center text-sm text-slate-500 animate-fade-in">
+                            Tidak ditemukan deskripsi SPOF (<code class="font-mono text-xs">spof_description</code> kosong).
+                        </div>
+                    `;
+                } else {
+                    resSpofDescription.innerHTML = descriptions.map((desc, idx) => `
+                        <div class="p-3.5 rounded-lg border border-amber-200/80 bg-amber-50/40 hover:bg-amber-50/80 transition-colors flex items-start gap-3 animate-fade-in">
+                            <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                ${idx + 1}
+                            </span>
+                            <p class="text-sm text-slate-800 leading-relaxed font-medium">
+                                ${highlightTechnicalTokens(escapeHtml(desc))}
+                            </p>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // Highlight kode node dan nomor CID 10 digit agar mudah dibaca teknisi
+            function highlightTechnicalTokens(escapedText) {
+                return escapedText
+                    .replace(/\b([A-Z]{6,}[0-9]{2,})\b/g, '<span class="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-900 font-mono text-xs font-semibold">$1</span>')
+                    .replace(/\b(\d{10})\b/g, '<span class="text-blue-700 font-mono font-semibold">$1</span>');
+            }
+
+            // Sanitasi HTML untuk mencegah XSS
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            /**
+             * Eksekusi Pencarian ke API Endpoint
+             */
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideBanner();
+
+                const cid1 = input1.value.trim();
+                const cid2 = input2.value.trim();
+                const token = tokenInput.value.trim() || 'xxxxxxx';
+
+                // Validasi 10 digit angka untuk kedua input CID
+                if (!/^\d{10}$/.test(cid1)) {
+                    input1.classList.add('border-rose-400');
+                    input1.focus();
+                    showBanner('error', '<strong>Validasi Gagal:</strong> Input <strong>CID / CID 1</strong> harus berupa <strong>10 digit angka</strong>.');
+                    return;
+                }
+
+                if (!/^\d{10}$/.test(cid2)) {
+                    input2.classList.add('border-rose-400');
+                    input2.focus();
+                    showBanner('error', '<strong>Validasi Gagal:</strong> Input <strong>CID / CID 2</strong> harus berupa <strong>10 digit angka</strong>.');
+                    return;
+                }
+
+                // URL sesuai spesifikasi: http://10.24.129.14/verapi/api/v1/datek/datek_checker/?CID={input1}%2C{input2}
+                const targetUrl = `http://10.24.129.14/verapi/api/v1/datek/datek_checker/?CID=${encodeURIComponent(cid1)}%2C${encodeURIComponent(cid2)}`;
+                requestUrlPreview.textContent = targetUrl;
+
+                setLoading(true);
+
+                try {
+                    const response = await fetch(targetUrl, {
+                        method: 'GET',
+                        headers: {
+                            'accept': '*/*',
+                            'Authorization': `Token ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+                    }
+
+                    const jsonData = await response.json();
+                    renderResults(jsonData, 'Live API Response');
+                    showBanner('success', `Berhasil mengambil data untuk CID <strong>${cid1}</strong> dan <strong>${cid2}</strong>.`);
+                } catch (err) {
+                    // Penanganan error jaringan intranet / CORS / Mixed Content
+                    console.error('Fetch Error:', err);
+                    showBanner(
+                        'warning',
+                        `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <strong>Tidak dapat terhubung ke server intranet (10.24.129.14):</strong> 
+                                <span class="block text-xs mt-0.5 opacity-90">${escapeHtml(err.message)}. Pastikan perangkat terhubung ke jaringan intranet / VPN, atau uji tampilan menggunakan data contoh.</span>
+                            </div>
+                            <button type="button" id="btn-fallback-sample" class="shrink-0 px-3 py-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors">
+                                Muat Data Contoh
+                            </button>
+                        </div>`
+                    );
+
+                    const fallbackBtn = document.getElementById('btn-fallback-sample');
+                    if (fallbackBtn) {
+                        fallbackBtn.addEventListener('click', () => {
+                            renderResults(SAMPLE_PAYLOAD, 'Simulasi Payload Contoh');
+                            showBanner('info', 'Menampilkan hasil menggunakan <strong>Simulasi Payload Contoh</strong>.');
+                        });
+                    }
+                } finally {
+                    setLoading(false);
+                }
+            });
+
+            // Tombol Simulasi Data Contoh (mengisi 10 digit contoh jika kosong & menampilkan hasil)
+            btnSimulate.addEventListener('click', () => {
+                if (!input1.value) {
+                    input1.value = '2025496539';
+                    handleNumericInput(input1, counter1);
+                }
+                if (!input2.value) {
+                    input2.value = '2024430333';
+                    handleNumericInput(input2, counter2);
+                }
+                renderResults(SAMPLE_PAYLOAD, 'Simulasi Payload Contoh');
+                showBanner('info', 'Menampilkan hasil simulasi berdasarkan payload contoh dengan header <code class="font-mono text-xs">Authorization: Token ${escapeHtml(tokenInput.value || "xxxxxxx")}</code>.');
+            });
+
+            // Tombol Reset Form
+            btnReset.addEventListener('click', () => {
+                input1.value = '';
+                input2.value = '';
+                handleNumericInput(input1, counter1);
+                handleNumericInput(input2, counter2);
+                hideBanner();
+
+                sourceBadge.classList.add('hidden');
+                resMessage.textContent = 'Belum ada data';
+                resMessage.className = 'text-base font-semibold text-slate-700 break-words';
+                resSpofStatus.innerHTML = `<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-200/70 text-slate-600">-</span>`;
+                spofCountBadge.textContent = '0 item';
+                resSpofDescription.innerHTML = `
+                    <div class="h-full min-h-[120px] flex flex-col items-center justify-center text-center p-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/40">
+                        <p class="text-sm font-medium text-slate-500">Belum ada deskripsi SPOF</p>
+                        <p class="text-xs text-slate-400 mt-1">Masukkan 2 CID lalu klik tombol <strong>Cari Datek</strong>.</p>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
